@@ -1,0 +1,89 @@
+rec = zoho.crm.getRecordById("Quotes",quoteid.toLong());
+productDetails = rec.get("Product_Details");
+acctid = rec.get("Account_Name").get("id");
+dealid = rec.get("Deal_Name").get("id");
+quotenum = rec.get("Quote_Number");
+custlist = List();
+custmp = Map();
+custmp.put("label","Quote Number");
+custmp.put("value",quotenum);
+custlist.add(custmp);
+//added to update invoice type - beg
+custmp1 = Map();
+custmp1.put("label","Invoice Type");
+custmp1.put("value","Customer Invoice");
+custlist.add(custmp1);
+//added to update invoice type - end
+prodList = List();
+for each  ele in productDetails
+{
+	prodid = ele.get("product").get("id");
+	//info prodid;
+	iteminfo = zoho.books.getRecords("Items","682374092","zcrm_product_id=" + prodid).get("items");
+	//	info iteminfo;
+	for each  item in iteminfo
+	{
+		itemid = item.get("item_id");
+		item = zoho.books.getRecordsByID("Items","682374092",itemid).get("item");
+		//info"item"+ item;
+		Tax = item.get("tax_id");
+		//Type = item.get("product_type");
+		tags = item.get("tags").toList();
+		tlist = List();
+		for each  f in tags
+		{
+			tagID = f.get("tag_id");
+			tagOption_id = f.get("tag_option_id");
+			imap = Map();
+			imap.put("tag_id",tagID);
+			imap.put("tag_option_id",tagOption_id);
+			tlist.add(imap);
+		}
+	}
+	quantity = ele.get("quantity");
+	listPrice = ele.get("list_price").toDecimal();
+	description = ele.get("product_description");
+	prodmp = Map();
+	prodmp.put("item_id",itemid);
+	prodmp.put("rate",listPrice);
+	prodmp.put("quantity",quantity);
+	prodmp.put("tax_id",Tax);
+	prodmp.put("tags",tlist);
+	prodmp.put("description",description);
+	//prodmp.put("product_type",Type);
+	prodmp.put("discount",ifnull(ele.get("Discount"),0.0));
+	prodList.add(prodmp);
+}
+continfo = zoho.books.getRecords("Contacts","682374092","zcrm_account_id=" + acctid).getJSON("contacts");
+for each  rec1 in continfo
+{
+	customerid = rec1.getJSON("contact_id");
+	// added to retrieve the vat registration number of the contact //
+	vatregno = ifnull(rec1.getJSON("tax_reg_no"),'000000000000000');
+	// added to retrieve the vat registration number of the contact //
+	info "VAT REG NO: " + vatregno;
+}
+mp = Map();
+mp.put("customer_id",customerid);
+mp.put("line_items",prodList);
+mp.put("custom_fields",custlist);
+mp.put("tax_treatment","vat_registered");
+// added to retrieve the vat registration number of the contact //
+mp.put("vat_reg_no",vatregno);
+// added to retrieve the vat registration number of the contact //
+mp.put("is_inclusive_tax",true);
+mp.put("invoice_date",today);
+mp.put("place_of_supply","DU");
+mp.put("zcrm_potential_id",dealid.toLong());
+mp.put("salesperson_name",rec.get("Owner").get("name"));
+create = zoho.books.createRecord("Invoices","682374092",mp);
+info "Invoice MAP: " + mp;
+info "Inv Created: " + create;
+if(create.toString().contains("The invoice has been created"))
+{
+	return "Successfully, Invoice is Created!";
+}
+else
+{
+	return "UnSuccessfully Invoice is not Created!";
+}
