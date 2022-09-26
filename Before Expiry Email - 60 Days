@@ -1,0 +1,30 @@
+//Trigger a template
+account_details = zoho.crm.getRecordById("Accounts",accountId);
+contact_details = zoho.crm.getRelatedRecords("Contacts","Accounts",accountId);
+template_data = {"id":3769920000014969046};
+email_payload = {"data":{{"from":{"email":"renewals@tlz.ae"},"to":{{"email":contact_details.getJson("Email")},{"email":"renewals@tlz.ae"},{"email":"junlie@tlz.ae"}},"org_email":true,"mail_format":"html","template":template_data}}};
+url = "https://www.zohoapis.com/crm/v3/Accounts/" + accountId + "/actions/send_mail";
+response = invokeurl
+[
+	url :url
+	type :POST
+	parameters:email_payload.toString()
+	connection:"send_mail"
+];
+info response;
+//-------------------------------------------------------------------------------------------------------
+//Trigger a bounced email
+if(response.getJson("data").getjson("code").containsIgnoreCase("NOT_ALLOWED") || response.getJson("data").getjson("code").containsIgnoreCase("INVALID_DATA"))
+{
+	template_data = {"id":3769920000112673162};
+	email_payload = {"data":{{"from":{"email":"renewals@tlz.ae"},"to":{{"email":"junlie@tlz.ae"}},"org_email":true,"mail_format":"html","template":template_data}}};
+	url = "https://www.zohoapis.com/crm/v3/Accounts/" + accountId + "/actions/send_mail";
+	response = invokeurl
+	[
+		url :url
+		type :POST
+		parameters:email_payload.toString()
+		connection:"send_mail"
+	];
+	info response;
+}
