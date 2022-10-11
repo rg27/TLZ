@@ -1,6 +1,3 @@
-//Account Module
-//Mass Update Subform
-
 updated_id_lists = account_id.toList("|||");
 for each  accountIdstr in updated_id_lists
 {
